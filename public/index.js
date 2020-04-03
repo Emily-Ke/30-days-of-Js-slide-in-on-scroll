@@ -1,37 +1,40 @@
-const imagesToSlideIn = [];
-
-const isOnScreen = (el) => {
-  const { top, bottom } = el.getBoundingClientRect();
-  return top < window.innerHeight && bottom > 0;
+const debounce = (func, wait = 20) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(args), wait);
+  };
 };
 
-const slideImages = () => {
-  imagesToSlideIn.forEach((image, index) => {
-    if (isOnScreen(image)) {
-      image.style.transform = 'translateX(0)';
-      imagesToSlideIn.splice(index, 1);
+const isOnScreen = (el, amount = 0) => {
+  const { top, bottom, height } = el.getBoundingClientRect();
+  const ratio = height * amount;
+  return top + ratio < window.innerHeight && bottom - ratio > 0;
+};
+
+const slideImages = (images) => {
+  images.forEach((image) => {
+    if (isOnScreen(image, 0.25)) {
+      image.classList.remove('hidden');
+    } else if (!isOnScreen(image)) {
+      image.classList.add('hidden');
     }
   });
-  if (imagesToSlideIn.length === 0) {
-    document.removeEventListener('scroll', slideImages);
-  }
 };
 
 const init = () => {
   // any image that is not visible on screen should be pushed off
-  const images = document.querySelectorAll('.container img');
-  images.forEach((image) => {
-    if (!isOnScreen(image)) {
-      imagesToSlideIn.push(image);
-      if (image.classList.contains('left')) {
-        image.style.transform = 'translateX(-110%)';
-      } else if (image.classList.contains('right')) {
-        image.style.transform = 'translateX(110%)';
-      }
+  const imagesToSlideIn = [...document.querySelectorAll('.container img')];
+  imagesToSlideIn.forEach((image) => {
+    if (!isOnScreen(image, 0.25)) {
+      image.classList.add('hidden');
     }
   });
 
-  document.addEventListener('scroll', slideImages);
+  document.addEventListener(
+    'scroll',
+    debounce(() => slideImages(imagesToSlideIn), 20)
+  );
 };
 
 window.addEventListener('load', init);
